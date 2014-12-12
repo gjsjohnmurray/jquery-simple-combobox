@@ -477,7 +477,9 @@
         }
         var $T = this, O = $T.data(pname);
         this.on('keyup', cp + cdisplay + ', ' + cp + cdiv, function(e) { // filter
-            if ([13, 38, 40, 9].indexOf(e.which) >= 0) {
+	    
+	    // Ignore keys that can't alter input field value
+            if ([38, 40, 13, 27, 9, 37, 39, 17, 18, 16, 20, 33, 34, 35, 36].indexOf(e.which) >= 0) {
                 return;
             }
             var fullMatch = O.fullMatch, highlight = O.highlight;
@@ -544,7 +546,8 @@
             if ($div.is(':animated')) {
                 return; // keydown event is only for arrows, enter and escape
             }
-            var v = this.value.trim().toLowerCase();
+            var v = this.value.trim();
+            v = (O.filterIgnoreCase) ? v.toLowerCase() : v;
             var scrollTop = $div.scrollTop();
             if (e.which == 40) { // arrdown
                 if ($div.is(':hidden')) {
@@ -619,12 +622,19 @@
                     return;
                 }
                 var valid = false;
+                
+      /*  No good doing this unless fillOnArrowPress is true, and unnecessary when it is
+      
                 $div.children('p').each(function() {
-                    if ($(cp + cmainspan, this).text().trim().toLowerCase() == v) {
+                    var candidate = $(cp + cmainspan, this).text().trim();
+                    candidate = (O.filterIgnoreCase) ? candidate.toLowerCase() : candidate;
+                    if (candidate == v) {
                         $(this).click();
                         valid = true;
                     }
                 });
+      */
+      
                 if (valid == false) {
                     $div.children(cp + chovered).click();
                 }
@@ -632,14 +642,23 @@
                     slide.call($div, 'up');
                 }
             } else if (e.which == 27) { // escape
-                slide.call($(this).blur().closest(cp).children(cp + clist), 'up');
+                //slide.call($(this).blur().closest(cp).children(cp + clist), 'up');
+                slide.call($div, 'up');
             } else if (e.which == 9) { // tab
                 if (O.fillOnTab) {
                     if (v) {
-                        var $p = $div.children('p:visible:first');
+		        // Used to pick the first visble item in the dropdown
+			// Now pick the selected item (if any)
+			
+                        //var $p = $div.children('p:visible:first');
+                        
+			var $p = $div.children(cp + chovered);
                         if ($p.length) {
                             e.preventDefault();
-                            $div.children('p:visible:first').click();
+                        
+			    //$div.children('p:visible:first').click();
+                        
+			    $p.click();
                         }
                     }
                 }
@@ -686,10 +705,19 @@
             $select.siblings(cp + cvalue).val($select.val());
             $select.change();
             slide.call($t.parent(), 'up');
-            $t.addClass(pname + chovered).siblings().removeClass(pname + chovered);
+            
+	    // No longer needed now a slide up clears the hover selection
+            //$t.addClass(pname + chovered).siblings().removeClass(pname + chovered);
         });
-        this.on('blur', cp + cdisplay, function() {
+        this.on('blur', cp + cdisplay, function(e) {
             var $t = $(this), O = $T.data(pname);
+	    
+	    // Unless losing focus to another part of this combobox (e.g. the down/up button, or the list itself), close the list.
+	    // This ensures that the list closes if we tab to the next control, an action invisible to the document-level
+	    // click-handler we otherwise use for list-closing.
+            if (!$(e.relatedTarget).is(cp + ' *')) {
+                slide.call($t.closest(cp).children(cp + clist), 'up');
+            }
             if (O.fillOnBlur && !O.invalidAsValue) {
                 getFirstP($t.parent().children(cp + clist)).click();
                 return;
@@ -885,10 +913,13 @@
      */
     function checkForInvalid() {
         var $display = this.children(cp + cdisplay), $select = this.children('select'), O = this.data(pname);
-        var value, v = $display.val().trim().toLowerCase();
+        var value, v = $display.val().trim();
+        v = (O.filterIgnoreCase) ? v.toLowerCase() : v;
         // check if such value exists in options
         $select.find('option').each(function () {
-            if (v == $(this).text().trim().toLowerCase()) {
+            var candidate = $(this).text().trim();
+            candidate = (O.filterIgnoreCase) ? candidate.toLowerCase() : candidate;
+            if (candidate == v) {
                 value = this.value;
             }
         });
@@ -941,11 +972,27 @@
             };
             this.slideUp(options).data('p-clicked-index', -1);
             $combobox.children(cp + cddarr).removeClass(pname + cddarr + '-up');
+
+            // When sliding up, remove hover selection and matching highlights so the list is clean for when it's next shown
+            $combobox.find(cp + chovered).removeClass(pname + chovered);
+            $(cp + '-marker', $combobox).contents().unwrap();            
         } else {
             O.beforeOpen.call($combobox);
             options.complete = function() {O.afterOpen.call($combobox)};
             this.slideDown(options);
             $combobox.children(cp + cddarr).addClass(pname + cddarr + '-up');
+
+            // Every edit keystroke will call a slide down; use this opportunity to reset the list's display characteristics fully.
+	    // Can't rely on a previous slide up having done this because that doesn't
+	    // happen if the list was filtered down to zero items because no match was found.
+            $combobox.find(cp + chovered).removeClass(pname + chovered); // remove previous selection
+            $(cp + '-marker', $combobox).contents().unwrap(); // remove previous highlight            
+
+            // Reveal everything whenever we slide down, so that user gets to see all the options.
+	    // If the slide down was triggered by entry of a character, filtering will immediately reduce the list
+	    // to matching items. If the slide down was by clicking the down-button, or entry of cursor-down,
+	    // all entries will remain displayed.
+            $combobox.children(cp + clist).children('p').show();
         }
         var $display = $combobox.children(cp + cdisplay); // code for fillOnArrowPress feature
         $display.each(function() {
