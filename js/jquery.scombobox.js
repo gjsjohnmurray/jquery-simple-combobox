@@ -478,10 +478,29 @@
         var $T = this, O = $T.data(pname);
         this.on('keyup', cp + cdisplay + ', ' + cp + cdiv, function(e) { // filter
 	    
-	    // Ignore keys that can't alter input field value
-            if ([38, 40, 13, 27, 9, 37, 39, 17, 18, 16, 20, 33, 34, 35, 36].indexOf(e.which) >= 0) {
+	          // Ignore keys that can't alter input field value on their own
+            if ([38, //Up arrow
+                 40, //Down arrow
+                 13, //Enter
+                 27, //Escape
+                 9,  //Tab
+                 37, //Left arrow
+                 39, //Right arrow
+                 17, //Ctrl
+                 18, //Alt
+                 16, //Shift
+                 20, //Caps lock
+                 33, //Page up
+                 34, //Page down
+                 35, //End
+                 36  //Home
+                 ].indexOf(e.which) >= 0) {
                 return;
             }
+            // Some extra cases
+            if (!e.ctrlKey && !e.shiftKey && e.which==45) return; //Insert without modifier
+            if (e.ctrlKey && e.which==65) return; //Ctrl+A; imperfect because sometimes we release the A *after* the Ctrl
+            
             var fullMatch = O.fullMatch, highlight = O.highlight;
             if (fullMatch) {
                 highlight = highlight !== false;
@@ -621,29 +640,13 @@
                     getFirstP($div).click();
                     return;
                 }
-                var valid = false;
-                
-      /*  No good doing this unless fillOnArrowPress is true, and unnecessary when it is
-      
-                $div.children('p').each(function() {
-                    var candidate = $(cp + cmainspan, this).text().trim();
-                    candidate = (O.filterIgnoreCase) ? candidate.toLowerCase() : candidate;
-                    if (candidate == v) {
-                        $(this).click();
-                        valid = true;
-                    }
-                });
-      */
-      
-                if (valid == false) {
-                    $div.children(cp + chovered).click();
-                }
+                $div.children(cp + chovered).click();
                 if (O.mode == 'default') {
                     slide.call($div, 'up');
                 }
             } else if (e.which == 27) { // escape
-                //slide.call($(this).blur().closest(cp).children(cp + clist), 'up');
-                slide.call($div, 'up');
+	        var $t = O.blurOnEscape ? $(this).blur() : $(this);
+                slide.call($t.closest(cp).children(cp + clist), 'up');
             } else if (e.which == 9) { // tab
                 if (O.fillOnTab) {
                     if (v) {
@@ -1284,6 +1287,10 @@
          * Select hovered or first matching option on blur
          */
         fillOnBlur: false,
+        /**
+         * Blurs the search field on escape keypress
+         */
+        blurOnEscape: false,
         /**
          * Whether to set the first visible item as a value on tab key press (works only if search input is not empty).
          * If set to false then the default action is working (going to the next input on page).
