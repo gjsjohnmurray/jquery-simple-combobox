@@ -83,6 +83,7 @@
             if (opts.mode != 'checkboxes') {
                 if (this.find(cp + cdisplay).length == 0) {
                     var $inputDisplay = $('<input class="' + pname + cdisplay + '" type="text" />');
+                    $inputDisplay.attr('title', $select.attr('title'));
                     this.append($inputDisplay);
                     this.height(
                         +$inputDisplay.css('font-size') +
@@ -112,8 +113,9 @@
                 this.find(cp + cdisplay).remove();
                 var $displayDiv = this.find(cp + cdisplay + '-div');
                 if ($displayDiv.length == 0) {
-                    this.append('<div class="' + pname + cdiv +'"><div class="' + pname + cdholder + '" /></div>');
+                    $displayDiv = this.append('<div class="' + pname + cdiv +'"><div class="' + pname + cdholder + '" /></div>');
                 }
+                $displayDiv.attr('title', $select.attr('title'));
                 $div.insertAfter(this.find(cp + cdisplay + '-div'));
                 var $dholder = this.find(cp + cdholder);
                 var $testItem = $('<div class="' + pname + cditem + '" id="' + pname + '-test-item"><div class="' + pname + cditem + '-text">x</div></div>');
@@ -166,6 +168,7 @@
                     $options.each(function () {
                         var $t = $(this);
                         var $p = $('<p />');
+                        $p.attr('title', $t.attr('title'));
                         if ($t.hasClass(pname + csep)) { // separator, not an option
                             if ($t.hasClass(pname + cpheader)) { // if header text also given then add only header
                                 $div.append($p.addClass(pname + cpheader).text($t.text()));
@@ -180,7 +183,7 @@
                             $t.remove(); // remove optgroup tag itself
                             $div.append(label ? $p.addClass(pname + cpheader).text(label) : $p.addClass(pname + csep));
                             $innerOptions.each(function() {
-                                $div.append($('<p />').append($('<span class="' + pname + cmainspan + '" />').text($(this).text())).data('value', this.value));
+                                $div.append($('<p />').attr('title', this.title).append($('<span class="' + pname + cmainspan + '" />').text($(this).text())).data('value', this.value));
                             });
                             return;
                         } else {
@@ -715,16 +718,20 @@
         this.on('blur', cp + cdisplay, function(e) {
             var $t = $(this), O = $T.data(pname);
 	    
-	    // Unless losing focus to another part of this combobox (e.g. the down/up button, or the list itself), close the list.
-	    // This ensures that the list closes if we tab to the next control, an action invisible to the document-level
-	    // click-handler we otherwise use for list-closing.
-            if (!$(e.relatedTarget).is(cp + ' *')) {
-                slide.call($t.closest(cp).children(cp + clist), 'up');
-            }
-            if (O.fillOnBlur && !O.invalidAsValue) {
-                getFirstP($t.parent().children(cp + clist)).click();
+	    // Do nothing in this handler if losing focus to another part of this combobox (e.g. the down/up button, or the list itself)
+            var rt = $(e.relatedTarget).closest(cp);
+            if (rt.length > 0 && rt[0] === $t.closest(cp)[0]) {
                 return;
             }
+	    
+            if (O.fillOnBlur && !O.invalidAsValue) {
+                getFirstP($t.parent().children(cp + clist)).click();
+                slide.call($t.closest(cp).children(cp + clist), 'up');
+                return;
+            }
+
+            slide.call($t.closest(cp).children(cp + clist), 'up');
+
             var vOriginal = $t.val().trim();
             var $valueInput = $t.siblings(cp + cvalue);
             var previousV = $valueInput.val();
@@ -1037,6 +1044,7 @@
                         $('<div />').addClass(pname + cditem)
                             .append($('<div />').addClass(pname + cditem + '-text').text($t.find(cp + cmainspan).text()))
                             .append($('<div />').addClass(pname + cdiremove).text('×').data('index', i)).fadeIn(duration * 1.5)
+                            .attr('title', $t.attr('title'))
                     );
                 }
             });
