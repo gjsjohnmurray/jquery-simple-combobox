@@ -480,8 +480,7 @@
         }
         var $T = this, O = $T.data(pname);
         this.on('keyup', cp + cdisplay + ', ' + cp + cdiv, function(e) { // filter
-	    
-	          // Ignore keys that can't alter input field value on their own
+            // Ignore keys that can't alter input field value on their own
             if ([38, //Up arrow
                  40, //Down arrow
                  13, //Enter
@@ -503,6 +502,7 @@
             // Some extra cases
             if (!e.ctrlKey && !e.shiftKey && e.which==45) return; //Insert without modifier
             if (e.ctrlKey && e.which==65) return; //Ctrl+A; imperfect because sometimes we release the A *after* the Ctrl
+            if (this.value=='' && (e.which==8 || e.which==46)) return; //Backspace or Delete on empty field
             
             var fullMatch = O.fullMatch, highlight = O.highlight;
             if (fullMatch) {
@@ -705,7 +705,6 @@
             $select.siblings(cp + cvalue).val($select.val());
             $select.change();
             slide.call($t.parent(), 'up');
-            
             $t.addClass(pname + chovered).siblings().removeClass(pname + chovered);
         });
         this.on('blur', cp + cdisplay, function(e) {
