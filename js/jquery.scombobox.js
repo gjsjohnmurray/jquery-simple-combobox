@@ -648,18 +648,17 @@
                     slide.call($div, 'up');
                 }
             } else if (e.which == 27) { // escape
-	        var $t = O.blurOnEscape ? $(this).blur() : $(this);
+                var $t = O.blurOnEscape ? $(this).blur() : $(this);
                 slide.call($t.closest(cp).children(cp + clist), 'up');
             } else if (e.which == 9) { // tab
                 if (O.fillOnTab) {
                     if (v) {
                         // Used to pick the first visible item in the dropdown
                         // Now pick the selected item (if any)
-                        
                         var $p = $div.children(cp + chovered);
                         if ($p.length) {
                             e.preventDefault();
-                        $p.click();
+                            $p.click();
                         }
                     }
                 }
@@ -711,21 +710,18 @@
         });
         this.on('blur', cp + cdisplay, function(e) {
             var $t = $(this), O = $T.data(pname);
-	    
+            
             // Do nothing in this handler if losing focus to another part of this combobox (e.g. the down/up button, or the list itself)
             var rt = $(e.relatedTarget).closest(cp);
             if (rt.length > 0 && rt[0] === $t.closest(cp)[0]) {
                 return;
             }
-	    
+            
+            slide.call($t.closest(cp).children(cp + clist), 'up'); // Make sure the list closes when we leave the control
             if (O.fillOnBlur && !O.invalidAsValue) {
                 getFirstP($t.parent().children(cp + clist)).click();
-                slide.call($t.closest(cp).children(cp + clist), 'up');
                 return;
             }
-
-            slide.call($t.closest(cp).children(cp + clist), 'up');
-
             var vOriginal = $t.val().trim();
             var $valueInput = $t.siblings(cp + cvalue);
             var previousV = $valueInput.val();
@@ -981,13 +977,11 @@
             options.complete = function() {O.afterOpen.call($combobox)};
             this.slideDown(options);
             $combobox.children(cp + cddarr).addClass(pname + cddarr + '-up');
-
+            
             // Every edit keystroke will call a slide down; use this opportunity to reset the list's display characteristics fully.
-            // We no longer expect a previous slide up to have done this; it didn't
-            // happen if the list was filtered down to zero items because no match was found.
             $combobox.find(cp + chovered).removeClass(pname + chovered); // remove previous selection
             $(cp + '-marker', $combobox).contents().unwrap(); // remove previous highlight            
-
+            
             // Reveal everything whenever we slide down, so that user gets to see all the options.
             // If the slide down was triggered by entry of a character, filtering will immediately reduce the list
             // to matching items. If the slide down was by clicking the down-button, or entry of cursor-down,
@@ -1001,7 +995,7 @@
                 $t.data('fillonarrow', false).val($t.data('value'));
             }
             
-            // Try and highlight an exact match
+            // Highlight first full match when dropping down
             if (dir == 'down') {
                 var search = this.value.trim();
                 if (O.filterIgnoreCase) {
@@ -1014,7 +1008,8 @@
                         text = text.toLowerCase();
                     }
                     if (text == search) {
-                        $combobox.children(cp + clist).children('p:eq(' + $selopts.index(this) + '):not(' + cp + csep + ', ' + cp + cpheader + ')').addClass(pname + chovered);
+                        $combobox.children(cp + clist).children('p:eq(' + $selopts.index(this) + '):not(' + cp + csep + ', ' + cp + cpheader + ')').first().addClass(pname + chovered);
+			return false;
                     }
                 });
             }
