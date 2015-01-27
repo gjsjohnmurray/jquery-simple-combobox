@@ -653,18 +653,13 @@
             } else if (e.which == 9) { // tab
                 if (O.fillOnTab) {
                     if (v) {
-		        // Used to pick the first visble item in the dropdown
-			// Now pick the selected item (if any)
-			
-                        //var $p = $div.children('p:visible:first');
+                        // Used to pick the first visible item in the dropdown
+                        // Now pick the selected item (if any)
                         
-			var $p = $div.children(cp + chovered);
+                        var $p = $div.children(cp + chovered);
                         if ($p.length) {
                             e.preventDefault();
-                        
-			    //$div.children('p:visible:first').click();
-                        
-			    $p.click();
+                        $p.click();
                         }
                     }
                 }
@@ -712,13 +707,12 @@
             $select.change();
             slide.call($t.parent(), 'up');
             
-	    // No longer needed now a slide up clears the hover selection
-            //$t.addClass(pname + chovered).siblings().removeClass(pname + chovered);
+            $t.addClass(pname + chovered).siblings().removeClass(pname + chovered);
         });
         this.on('blur', cp + cdisplay, function(e) {
             var $t = $(this), O = $T.data(pname);
 	    
-	    // Do nothing in this handler if losing focus to another part of this combobox (e.g. the down/up button, or the list itself)
+            // Do nothing in this handler if losing focus to another part of this combobox (e.g. the down/up button, or the list itself)
             var rt = $(e.relatedTarget).closest(cp);
             if (rt.length > 0 && rt[0] === $t.closest(cp)[0]) {
                 return;
@@ -982,10 +976,6 @@
             };
             this.slideUp(options).data('p-clicked-index', -1);
             $combobox.children(cp + cddarr).removeClass(pname + cddarr + '-up');
-
-            // When sliding up, remove hover selection and matching highlights so the list is clean for when it's next shown
-            $combobox.find(cp + chovered).removeClass(pname + chovered);
-            $(cp + '-marker', $combobox).contents().unwrap();            
         } else {
             O.beforeOpen.call($combobox);
             options.complete = function() {O.afterOpen.call($combobox)};
@@ -993,15 +983,15 @@
             $combobox.children(cp + cddarr).addClass(pname + cddarr + '-up');
 
             // Every edit keystroke will call a slide down; use this opportunity to reset the list's display characteristics fully.
-	    // Can't rely on a previous slide up having done this because that doesn't
-	    // happen if the list was filtered down to zero items because no match was found.
+            // We no longer expect a previous slide up to have done this; it didn't
+            // happen if the list was filtered down to zero items because no match was found.
             $combobox.find(cp + chovered).removeClass(pname + chovered); // remove previous selection
             $(cp + '-marker', $combobox).contents().unwrap(); // remove previous highlight            
 
             // Reveal everything whenever we slide down, so that user gets to see all the options.
-	    // If the slide down was triggered by entry of a character, filtering will immediately reduce the list
-	    // to matching items. If the slide down was by clicking the down-button, or entry of cursor-down,
-	    // all entries will remain displayed.
+            // If the slide down was triggered by entry of a character, filtering will immediately reduce the list
+            // to matching items. If the slide down was by clicking the down-button, or entry of cursor-down,
+            // all entries will remain displayed.
             $combobox.children(cp + clist).children('p').show();
         }
         var $display = $combobox.children(cp + cdisplay); // code for fillOnArrowPress feature
@@ -1009,6 +999,24 @@
             var $t = $(this);
             if ($t.data('fillonarrow') && !backspace) { // fix backspace bug
                 $t.data('fillonarrow', false).val($t.data('value'));
+            }
+            
+            // Try and highlight an exact match
+            if (dir == 'down') {
+                var search = this.value.trim();
+                if (O.filterIgnoreCase) {
+                    search = search.toLowerCase();
+                }
+                var $selopts = $combobox.find('select option');
+                $selopts.each(function() {
+                    var text = $(this).text().trim();
+                    if (O.filterIgnoreCase) {
+                        text = text.toLowerCase();
+                    }
+                    if (text == search) {
+                        $combobox.children(cp + clist).children('p:eq(' + $selopts.index(this) + '):not(' + cp + csep + ', ' + cp + cpheader + ')').addClass(pname + chovered);
+                    }
+                });
             }
         });
     }
