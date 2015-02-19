@@ -456,24 +456,39 @@
 
     function setValue(value) { // for default mode
         var $t = $(this);
+        var O = this.data(pname);
         var $select = $t.children('select'), $valueInput = $t.children(cp + cvalue), $display = $t.children(cp + cdisplay);
         var $selected = $select.children('[value="' + value + '"]');
+        $display.removeClass(pname + cinvalid).siblings(cp + cddback).removeClass(pname + cddback + cinvalid)
         if (!$selected.length) { // no such value
             $t.find(cp + clist + ' p').removeClass(pname + chovered);
             $select.children().prop('selected', false);
-            $valueInput.val(''); // TODO make combobox return null instead of empty string (standard select behavior)
-            $display.val('');
+            if (!O.invalidAsValue) {
+                value = ''; // TODO make combobox return null instead of empty string (standard select behavior)
+            } else {
+                if (O.highlightInvalid || (O.invalidAsValue ? (O.highlightInvalid) : O.highlightInvalid === null)) {
+                    $display.addClass(pname + cinvalid).siblings(cp + cddback)
+                            .addClass(pname + cddback + cinvalid);
+                }
+            }
+            $valueInput.val(value);
+            $display.val(value);
             return;
         }
         $t.find(cp + clist + ' p').eq($selected[0].index).addClass(pname + chovered).siblings().removeClass(pname + chovered);
+
+        $valueInput.val(value).data('changed', true);
         $select.val(value).change();
-        $t.find(cp + cvalue).val(value);
+        //$t.find(cp + cvalue).val(value);
     }
 
     /**
      * Add all the combobox logic.
      * @returns {undefined}
      */
+     
+    var blurTimer;
+     
     function addListeners() {
         if (this.data('listenersAdded')) { // prevent duplicating listeners
             return;
@@ -706,14 +721,16 @@
             slide.call($t.parent(), 'up');
             $t.addClass(pname + chovered).siblings().removeClass(pname + chovered);
         });
-        this.on('blur', cp + cdisplay, function(e) {
+        //this.on('blur', cp + cdisplay, function(e) {
+        this.on('blur', cp + cdisplay, function() {
+          blurTimer = setTimeout( function() {
             var $t = $(this), O = $T.data(pname);
             
             // Do nothing in this handler if losing focus to another part of this combobox (e.g. the down/up button, or the list itself)
-            var rt = $(e.relatedTarget).closest(cp);
-            if (rt.length > 0 && rt[0] === $t.closest(cp)[0]) {
-                return;
-            }
+            //var rt = $(e.relatedTarget).closest(cp);
+            //if (rt.length > 0 && rt[0] === $t.closest(cp)[0]) {
+            //    return;
+            //}
             
             slide.call($t.closest(cp).children(cp + clist), 'up'); // Make sure the list closes when we leave the control
             if (O.fillOnBlur && !O.invalidAsValue) {
@@ -747,7 +764,12 @@
             if (previousV !== $valueInput.val()) {
                 $valueInput.change().data('changed', true);
             }
+          }.bind(this),
+          200)
         });
+        
+        this.on('focus', cp + cdisplay + ' *', function() { blurTimer.clearTimeout();});
+        
         this.on('focus', cp + cdisplay, function() {
             if (!this.value.trim()) { // focusing in empty field
                 // should trigger full dropdown:
