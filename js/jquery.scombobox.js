@@ -479,7 +479,6 @@
 
         $valueInput.val(value).data('changed', true);
         $select.val(value).change();
-        //$t.find(cp + cvalue).val(value);
     }
 
     /**
@@ -745,6 +744,7 @@
                 $t.data('silentfocus', true);
             }
             
+            $t.data('fillonarrow', false); // Prevent the slide-up from resetting value
             slide.call($t.closest(cp).children(cp + clist), 'up'); // Make sure the list closes when we leave the control
             if (O.fillOnBlur && !O.invalidAsValue) {
                 getFirstP($t.parent().children(cp + clist)).click();
